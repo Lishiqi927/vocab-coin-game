@@ -431,11 +431,11 @@
   <div class="stats">
     <span>第 <b id="roundCount">0</b> 轮</span>
     <span>答对 <b id="correctCount">0</b> 次</span>
-    <span>累计获得 <b id="earnedCount">0</b> 金币</span>
+    <span>本局得分 <b id="earnedCount">0</b></span>
   </div>
 
   <div class="rules">
-    初始10金币 · 每轮花费2金币 · 小学词+1 初中词+3 高中词+5 四级词+10 · 每轮限时10秒 · 金币耗尽游戏结束
+    初始10金币 · 每轮花费2金币 · 答对：小学+1 初中+3 高中+5 四级+10 · 答错/超时倒扣同等金币 · 每轮限时10秒 · 金币耗尽游戏结束
   </div>
 </div>
 
@@ -3594,15 +3594,22 @@ async function createAccount(username, passwordHash){
   return rows[0];
 }
 
-async function updateAccountScore(username, totalScore, bestSession, gamesPlayed){
-  await sbFetch(`accounts?username=eq.${encodeURIComponent(username)}`, {
-    method: "PATCH",
-    body: JSON.stringify({ total_score: totalScore, best_session: bestSession, games_played: gamesPlayed })
+async function insertGameRecord(username, score){
+  const rows = await sbFetch(`game_records`, {
+    method: "POST",
+    headers: { "Prefer": "return=representation" },
+    body: JSON.stringify({ username, score })
   });
+  return rows[0];
 }
 
-async function fetchLeaderboard(){
-  return await sbFetch(`accounts?select=username,total_score&order=total_score.desc`);
+async function fetchGameLeaderboard(){
+  return await sbFetch(`game_records?select=id,username,score&order=score.desc,created_at.asc`);
+}
+
+async function fetchPersonalBest(username){
+  const rows = await sbFetch(`game_records?username=eq.${encodeURIComponent(username)}&select=score&order=score.desc&limit=1`);
+  return rows.length ? rows[0].score : 0;
 }
 
 function getCurrentUsername(){
@@ -3823,7 +3830,11 @@ function onMeaningPicked(picked, correctZh, lv){
     updateTopStats();
     showFeedback(true, `回答正确！获得 ${reward} 金币`, `当前金币：${gold}`);
   }else{
-    showFeedback(false, `回答错误`, `正确答案：${correctZh}`);
+    const penalty = LEVELS[lv].reward;
+    gold = Math.max(0, gold - penalty);
+    earnedCount -= penalty;
+    updateTopStats();
+    showFeedback(false, `回答错误，扣除 ${penalty} 金币`, `正确答案：${correctZh} · 当前金币：${gold}`);
   }
   scheduleNextRound();
 }
@@ -3832,10 +3843,14 @@ function onTimeout(lv, correctZh){
   clearTimer();
   stage = "feedback";
   if(lv && correctZh){
+    const penalty = LEVELS[lv].reward;
+    gold = Math.max(0, gold - penalty);
+    earnedCount -= penalty;
+    updateTopStats();
     document.querySelectorAll(".meaning-btn").forEach(btn=>{
       if(btn.dataset.zh === correctZh) btn.classList.add("correct");
     });
-    showFeedback(false, `超时啦`, `正确答案：${correctZh}`);
+    showFeedback(false, `超时啦，扣除 ${penalty} 金币`, `正确答案：${correctZh} · 当前金币：${gold}`);
   }else{
     showFeedback(false, `超时啦`, `未能及时选择单词`);
   }
@@ -3866,35 +3881,27 @@ async function endGame(){
   card.innerHTML = `<div class="feedback good">正在结算成绩...<span class="sub">正在连接排行榜</span></div>`;
 
   const username = getCurrentUsername();
-  let account = null;
+  let record = null;
   let ranked = [];
   let myRank = 0;
-  let totalUsers = 0;
+  let totalGames = 0;
   let above = null;
   let below = null;
+  let personalBest = 0;
   let leaderboardError = false;
 
   try{
-    account = await fetchAccount(username);
-    if(!account) throw new Error("account not found");
+    record = await insertGameRecord(username, earnedCount);
 
-    const newTotal = (account.total_score || 0) + earnedCount;
-    const newBest = Math.max(account.best_session || 0, earnedCount);
-    const newGamesPlayed = (account.games_played || 0) + 1;
-    await updateAccountScore(username, newTotal, newBest, newGamesPlayed);
-    account.total_score = newTotal;
-    account.best_session = newBest;
-    account.games_played = newGamesPlayed;
-
-    const all = await fetchLeaderboard();
-    ranked = all
-      .map(r => ({ name: r.username, score: r.total_score || 0 }))
-      .sort((a,b) => b.score - a.score || a.name.localeCompare(b.name));
-    const myIndex = ranked.findIndex(r => r.name === username);
+    const all = await fetchGameLeaderboard();
+    ranked = all;
+    const myIndex = ranked.findIndex(r => r.id === record.id);
     myRank = myIndex + 1;
-    totalUsers = ranked.length;
+    totalGames = ranked.length;
     above = myIndex > 0 ? ranked[myIndex-1] : null;
     below = myIndex >= 0 && myIndex < ranked.length-1 ? ranked[myIndex+1] : null;
+
+    personalBest = await fetchPersonalBest(username);
   }catch(err){
     console.error(err);
     leaderboardError = true;
@@ -3902,23 +3909,23 @@ async function endGame(){
 
   const leaderboardHtml = leaderboardError
     ? `<div class="leaderboard">
-        <div class="lb-title">🏆 排行榜</div>
+        <div class="lb-title">🏆 本局排行榜</div>
         <div class="lb-me">排行榜加载失败，请检查网络连接后点"再来一局"重试</div>
       </div>`
     : `<div class="leaderboard">
-        <div class="lb-title">🏆 排行榜</div>
+        <div class="lb-title">🏆 本局排行榜</div>
         <div class="lb-me">
-          <div>当前积分：<b>${account.total_score}</b></div>
-          <div>历史最高单局：<b>${account.best_session}</b></div>
-          <div>当前排名：<b>第 ${myRank} 名</b>（共 ${totalUsers} 人）</div>
+          <div>本局得分：<b>${record.score}</b></div>
+          <div>历史最高单局：<b>${personalBest}</b></div>
+          <div>本局排名：<b>第 ${myRank} 名</b>（共 ${totalGames} 局）</div>
         </div>
         <div class="lb-list">
           ${above
-            ? `<div class="leaderboard-row"><span>↑ ${escapeHtml(above.name)}</span><span>${above.score} 分</span></div>`
+            ? `<div class="leaderboard-row"><span>↑ ${escapeHtml(above.username)}</span><span>${above.score} 分</span></div>`
             : `<div class="leaderboard-row muted"><span>你已是第一名</span></div>`}
-          <div class="leaderboard-row me"><span>${escapeHtml(username)}（我）</span><span>${account.total_score} 分</span></div>
+          <div class="leaderboard-row me"><span>${escapeHtml(username)}（我，本局）</span><span>${record.score} 分</span></div>
           ${below
-            ? `<div class="leaderboard-row"><span>↓ ${escapeHtml(below.name)}</span><span>${below.score} 分</span></div>`
+            ? `<div class="leaderboard-row"><span>↓ ${escapeHtml(below.username)}</span><span>${below.score} 分</span></div>`
             : `<div class="leaderboard-row muted"><span>你已是最后一名</span></div>`}
         </div>
       </div>`;
@@ -3930,7 +3937,7 @@ async function endGame(){
       <div class="row"><span>总轮数</span><span>${round}</span></div>
       <div class="row"><span>答对次数</span><span>${correctCount}</span></div>
       <div class="row"><span>正确率</span><span>${round ? Math.round(correctCount/round*100) : 0}%</span></div>
-      <div class="row"><span>本局获得金币</span><span>${earnedCount}</span></div>
+      <div class="row"><span>本局得分</span><span>${earnedCount}</span></div>
       ${leaderboardHtml}
       <button class="restart-btn" id="restartBtn">再来一局</button>
       <button class="switch-user-btn" id="switchUserBtn">切换账号</button>
