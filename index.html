@@ -386,6 +386,75 @@
     justify-content:center;
     background:transparent;
   }
+  .result-layout{
+    display:flex;
+    gap:20px;
+    align-items:flex-start;
+  }
+  .result-layout .gameover{
+    flex:1;
+    min-width:0;
+  }
+  .global-board{
+    width:220px;
+    flex-shrink:0;
+    background:#f7f8fd;
+    border-radius:14px;
+    padding:14px 16px;
+    text-align:left;
+  }
+  .global-board .lb-title{
+    font-weight:800;
+    margin-bottom:10px;
+    color:var(--text);
+  }
+  .global-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 8px;
+    border-radius:8px;
+    font-size:13px;
+    margin-bottom:5px;
+    background:#eef0fb;
+  }
+  .global-row.me{
+    background:rgba(79,109,245,.12);
+    font-weight:700;
+    color:var(--primary);
+  }
+  .global-rank{
+    width:20px;
+    text-align:center;
+    font-weight:800;
+    color:var(--muted);
+  }
+  .global-row.top1 .global-rank{ color:#f5b942; }
+  .global-row.top2 .global-rank{ color:#b0b0b0; }
+  .global-row.top3 .global-rank{ color:#cd7f32; }
+  .global-name{
+    flex:1;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .global-score{
+    font-weight:700;
+  }
+  .global-empty{
+    color:var(--muted);
+    font-size:13px;
+    text-align:center;
+    padding:10px 0;
+  }
+  @media (max-width:600px){
+    .result-layout{
+      flex-direction:column;
+    }
+    .global-board{
+      width:100%;
+    }
+  }
   .switch-user-btn{
     margin-top:10px;
     background:none;
@@ -3892,6 +3961,7 @@ async function endGame(){
   let above = null;
   let below = null;
   let personalBest = 0;
+  let globalRanked = [];
   let leaderboardError = false;
 
   try{
@@ -3907,6 +3977,8 @@ async function endGame(){
     below = myIndex >= 0 && myIndex < ranked.length-1 ? ranked[myIndex+1] : null;
 
     personalBest = await fetchPersonalBest(username);
+    globalRanked = [...others, { username, score: personalBest, isMe: true }]
+      .sort((a,b) => b.score - a.score || a.username.localeCompare(b.username));
   }catch(err){
     console.error(err);
     leaderboardError = true;
@@ -3935,16 +4007,35 @@ async function endGame(){
         </div>
       </div>`;
 
+  const globalBoardHtml = `
+    <div class="global-board">
+      <div class="lb-title">🏅 总排行榜</div>
+      ${leaderboardError
+        ? `<div class="global-empty">加载失败</div>`
+        : (globalRanked.length
+          ? globalRanked.map((r,i) => `
+              <div class="global-row ${r.isMe ? "me":""} ${i===0?"top1":i===1?"top2":i===2?"top3":""}">
+                <span class="global-rank">${i+1}</span>
+                <span class="global-name">${escapeHtml(r.username)}${r.isMe ? "（我）":""}</span>
+                <span class="global-score">${r.score}</span>
+              </div>`).join("")
+          : `<div class="global-empty">暂无数据</div>`)
+      }
+    </div>`;
+
   card.innerHTML = `
-    <div class="gameover">
-      <h2>🎮 游戏结束</h2>
-      <div class="final-score">本局得分 ${earnedCount}</div>
-      <div class="row"><span>总轮数</span><span>${round}</span></div>
-      <div class="row"><span>答对次数</span><span>${correctCount}</span></div>
-      <div class="row"><span>正确率</span><span>${round ? Math.round(correctCount/round*100) : 0}%</span></div>
-      ${leaderboardHtml}
-      <button class="restart-btn" id="restartBtn">再来一局</button>
-      <button class="switch-user-btn" id="switchUserBtn">切换账号</button>
+    <div class="result-layout">
+      <div class="gameover">
+        <h2>🎮 游戏结束</h2>
+        <div class="final-score">本局得分 ${earnedCount}</div>
+        <div class="row"><span>总轮数</span><span>${round}</span></div>
+        <div class="row"><span>答对次数</span><span>${correctCount}</span></div>
+        <div class="row"><span>正确率</span><span>${round ? Math.round(correctCount/round*100) : 0}%</span></div>
+        ${leaderboardHtml}
+        <button class="restart-btn" id="restartBtn">再来一局</button>
+        <button class="switch-user-btn" id="switchUserBtn">切换账号</button>
+      </div>
+      ${globalBoardHtml}
     </div>
   `;
   document.getElementById("restartBtn").addEventListener("click", resetGame);
