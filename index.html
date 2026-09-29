@@ -3603,8 +3603,14 @@ async function insertGameRecord(username, score){
   return rows[0];
 }
 
-async function fetchGameLeaderboard(){
-  return await sbFetch(`game_records?select=id,username,score&order=score.desc,created_at.asc`);
+async function fetchOthersBestScores(username){
+  const rows = await sbFetch(`game_records?username=neq.${encodeURIComponent(username)}&select=username,score`);
+  const bestByUser = new Map();
+  rows.forEach(r => {
+    const best = bestByUser.get(r.username);
+    if(best === undefined || r.score > best) bestByUser.set(r.username, r.score);
+  });
+  return Array.from(bestByUser, ([username, score]) => ({ username, score }));
 }
 
 async function fetchPersonalBest(username){
@@ -3882,7 +3888,7 @@ async function endGame(){
   let record = null;
   let ranked = [];
   let myRank = 0;
-  let totalGames = 0;
+  let totalUsers = 0;
   let above = null;
   let below = null;
   let personalBest = 0;
@@ -3891,11 +3897,12 @@ async function endGame(){
   try{
     record = await insertGameRecord(username, earnedCount);
 
-    const all = await fetchGameLeaderboard();
-    ranked = all;
-    const myIndex = ranked.findIndex(r => r.id === record.id);
+    const others = await fetchOthersBestScores(username);
+    ranked = [...others, { username, score: earnedCount, isMe: true }]
+      .sort((a,b) => b.score - a.score || a.username.localeCompare(b.username));
+    const myIndex = ranked.findIndex(r => r.isMe);
     myRank = myIndex + 1;
-    totalGames = ranked.length;
+    totalUsers = ranked.length;
     above = myIndex > 0 ? ranked[myIndex-1] : null;
     below = myIndex >= 0 && myIndex < ranked.length-1 ? ranked[myIndex+1] : null;
 
@@ -3915,7 +3922,7 @@ async function endGame(){
         <div class="lb-me">
           <div>本局得分：<b>${record.score}</b></div>
           <div>历史最高单局：<b>${personalBest}</b></div>
-          <div>本局排名：<b>第 ${myRank} 名</b>（共 ${totalGames} 局）</div>
+          <div>本局排名：<b>第 ${myRank} 名</b>（共 ${totalUsers} 人）</div>
         </div>
         <div class="lb-list">
           ${above
