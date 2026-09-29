@@ -3647,6 +3647,27 @@ const WORD_BANK = {
 
 const ALL_MEANINGS = Object.values(WORD_BANK).flat().map(w => w[1]);
 
+let wordPools = { primary: [], middle: [], high: [], cet4: [] };
+
+function shuffleArray(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function resetWordPools(){
+  wordPools = { primary: [], middle: [], high: [], cet4: [] };
+}
+
+function drawWord(level){
+  if(wordPools[level].length === 0){
+    wordPools[level] = shuffleArray([...WORD_BANK[level]]);
+  }
+  return wordPools[level].pop();
+}
+
 const ROUND_TIME = 10; // seconds
 const ROUND_COST = 2;
 const START_GOLD = 10;
@@ -3824,14 +3845,12 @@ logoutBtnEl.addEventListener("click", handleLogout);
   });
 });
 
-function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-
 function buildRoundWords(){
   return {
-    primary: pickRandom(WORD_BANK.primary),
-    middle:  pickRandom(WORD_BANK.middle),
-    high:    pickRandom(WORD_BANK.high),
-    cet4:    pickRandom(WORD_BANK.cet4),
+    primary: drawWord("primary"),
+    middle:  drawWord("middle"),
+    high:    drawWord("high"),
+    cet4:    drawWord("cet4"),
   };
 }
 
@@ -4107,6 +4126,7 @@ function resetGame(){
   round = 0;
   correctCount = 0;
   earnedCount = 0;
+  resetWordPools();
   updateTopStats();
   startRound();
 }
