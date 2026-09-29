@@ -3658,14 +3658,16 @@ function shuffleArray(arr){
 }
 
 function resetWordPools(){
-  wordPools = { primary: [], middle: [], high: [], cet4: [] };
+  wordPools = {
+    primary: shuffleArray([...WORD_BANK.primary]),
+    middle: shuffleArray([...WORD_BANK.middle]),
+    high: shuffleArray([...WORD_BANK.high]),
+    cet4: shuffleArray([...WORD_BANK.cet4]),
+  };
 }
 
 function drawWord(level){
-  if(wordPools[level].length === 0){
-    wordPools[level] = shuffleArray([...WORD_BANK[level]]);
-  }
-  return wordPools[level].pop();
+  return wordPools[level].length ? wordPools[level].pop() : null;
 }
 
 const ROUND_TIME = 10; // seconds
@@ -3846,12 +3848,12 @@ logoutBtnEl.addEventListener("click", handleLogout);
 });
 
 function buildRoundWords(){
-  return {
-    primary: drawWord("primary"),
-    middle:  drawWord("middle"),
-    high:    drawWord("high"),
-    cet4:    drawWord("cet4"),
-  };
+  const words = {};
+  Object.keys(LEVELS).forEach(lv => {
+    const w = drawWord(lv);
+    if(w) words[lv] = w;
+  });
+  return words;
 }
 
 function buildMeaningChoices(correctZh){
@@ -3904,6 +3906,10 @@ function startRound(){
   round += 1;
   updateTopStats();
   currentRoundWords = buildRoundWords();
+  if(Object.keys(currentRoundWords).length === 0){
+    endGame();
+    return;
+  }
   stage = "picking";
   renderPicking();
 }
@@ -3918,7 +3924,7 @@ function renderPicking(){
     ${renderTimerWrap()}
     <div class="stage-label">选择一个单词进行挑战（等级越高奖励越多）</div>
     <div class="word-grid">
-      ${Object.keys(LEVELS).map(lv => {
+      ${Object.keys(w).map(lv => {
         const info = LEVELS[lv];
         const [en] = w[lv];
         return `<div class="word-btn" data-lv="${lv}">
