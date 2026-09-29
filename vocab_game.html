@@ -3670,6 +3670,20 @@ function drawWord(level){
   return wordPools[level].length ? wordPools[level].pop() : null;
 }
 
+function returnWordToPool(level, word){
+  const pool = wordPools[level];
+  if(!pool) return;
+  const idx = Math.floor(Math.random() * (pool.length + 1));
+  pool.splice(idx, 0, word);
+}
+
+function returnRoundWords(exceptLevel){
+  Object.keys(currentRoundWords).forEach(lv => {
+    if(lv === exceptLevel) return;
+    returnWordToPool(lv, currentRoundWords[lv]);
+  });
+}
+
 const ROUND_TIME = 10; // seconds
 const ROUND_COST = 2;
 const START_GOLD = 10;
@@ -3988,11 +4002,13 @@ function onMeaningPicked(picked, correctZh, lv){
     correctCount += 1;
     earnedCount += reward;
     updateTopStats();
+    returnRoundWords(lv);
     showFeedback(true, `回答正确！获得 ${reward} 金币`, `当前金币：${gold}`);
   }else{
     const penalty = LEVELS[lv].reward;
     gold = Math.max(0, gold - penalty);
     updateTopStats();
+    returnRoundWords();
     showFeedback(false, `回答错误，扣除 ${penalty} 金币`, `正确答案：${correctZh} · 当前金币：${gold}`);
   }
   scheduleNextRound();
@@ -4005,11 +4021,13 @@ function onTimeout(lv, correctZh){
     const penalty = LEVELS[lv].reward;
     gold = Math.max(0, gold - penalty);
     updateTopStats();
+    returnRoundWords();
     document.querySelectorAll(".meaning-btn").forEach(btn=>{
       if(btn.dataset.zh === correctZh) btn.classList.add("correct");
     });
     showFeedback(false, `超时啦，扣除 ${penalty} 金币`, `正确答案：${correctZh} · 当前金币：${gold}`);
   }else{
+    returnRoundWords();
     showFeedback(false, `超时啦`, `未能及时选择单词`);
   }
   scheduleNextRound();
