@@ -224,7 +224,7 @@
     font-size:28px;
     margin-bottom:6px;
   }
-  .gameover .final-gold{
+  .gameover .final-score{
     font-size:48px;
     font-weight:800;
     color:var(--gold);
@@ -3832,7 +3832,6 @@ function onMeaningPicked(picked, correctZh, lv){
   }else{
     const penalty = LEVELS[lv].reward;
     gold = Math.max(0, gold - penalty);
-    earnedCount -= penalty;
     updateTopStats();
     showFeedback(false, `回答错误，扣除 ${penalty} 金币`, `正确答案：${correctZh} · 当前金币：${gold}`);
   }
@@ -3845,7 +3844,6 @@ function onTimeout(lv, correctZh){
   if(lv && correctZh){
     const penalty = LEVELS[lv].reward;
     gold = Math.max(0, gold - penalty);
-    earnedCount -= penalty;
     updateTopStats();
     document.querySelectorAll(".meaning-btn").forEach(btn=>{
       if(btn.dataset.zh === correctZh) btn.classList.add("correct");
@@ -3933,11 +3931,10 @@ async function endGame(){
   card.innerHTML = `
     <div class="gameover">
       <h2>🎮 游戏结束</h2>
-      <div class="final-gold">${gold} 金币</div>
+      <div class="final-score">本局得分 ${earnedCount}</div>
       <div class="row"><span>总轮数</span><span>${round}</span></div>
       <div class="row"><span>答对次数</span><span>${correctCount}</span></div>
       <div class="row"><span>正确率</span><span>${round ? Math.round(correctCount/round*100) : 0}%</span></div>
-      <div class="row"><span>本局得分</span><span>${earnedCount}</span></div>
       ${leaderboardHtml}
       <button class="restart-btn" id="restartBtn">再来一局</button>
       <button class="switch-user-btn" id="switchUserBtn">切换账号</button>
