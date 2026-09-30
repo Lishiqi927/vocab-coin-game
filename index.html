@@ -386,6 +386,33 @@
     justify-content:center;
     background:transparent;
   }
+  .wrong-words{
+    background:#fff5f5;
+    border-radius:14px;
+    padding:14px 16px;
+    margin:16px 0;
+    text-align:left;
+  }
+  .wrong-list{
+    max-height:180px;
+    overflow-y:auto;
+  }
+  .wrong-row{
+    display:flex;
+    justify-content:space-between;
+    padding:8px 10px;
+    border-radius:8px;
+    font-size:14px;
+    margin-bottom:6px;
+    background:#fdeaea;
+  }
+  .wrong-en{
+    font-weight:700;
+    color:var(--text);
+  }
+  .wrong-zh{
+    color:#d9534f;
+  }
   .result-layout{
     display:flex;
     gap:20px;
@@ -3696,6 +3723,7 @@ let timerId = null;
 let timeLeft = ROUND_TIME;
 let currentRoundWords = null; // {primary:[en,zh], middle:..., high:..., cet4:...}
 let stage = "picking"; // picking | meaning | feedback | over
+let wrongWords = []; // [{en, zh}]
 
 const card = document.getElementById("card");
 const goldCountEl = document.getElementById("goldCount");
@@ -4009,6 +4037,8 @@ function onMeaningPicked(picked, correctZh, lv){
     gold = Math.max(0, gold - penalty);
     updateTopStats();
     returnRoundWords();
+    const [en] = currentRoundWords[lv];
+    wrongWords.push({ en, zh: correctZh });
     showFeedback(false, `回答错误，扣除 ${penalty} 金币`, `正确答案：${correctZh} · 当前金币：${gold}`);
   }
   scheduleNextRound();
@@ -4021,10 +4051,12 @@ function onTimeout(lv, correctZh){
     const penalty = LEVELS[lv].reward;
     gold = Math.max(0, gold - penalty);
     updateTopStats();
+    const [en] = currentRoundWords[lv];
     returnRoundWords();
     document.querySelectorAll(".meaning-btn").forEach(btn=>{
       if(btn.dataset.zh === correctZh) btn.classList.add("correct");
     });
+    wrongWords.push({ en, zh: correctZh });
     showFeedback(false, `超时啦，扣除 ${penalty} 金币`, `正确答案：${correctZh} · 当前金币：${gold}`);
   }else{
     returnRoundWords();
@@ -4126,6 +4158,17 @@ async function endGame(){
       }
     </div>`;
 
+  const wrongWordsHtml = wrongWords.length
+    ? `<div class="wrong-words">
+        <div class="lb-title">📖 本局背错的单词</div>
+        <div class="wrong-list">
+          ${wrongWords.map(w => `
+            <div class="wrong-row"><span class="wrong-en">${escapeHtml(w.en)}</span><span class="wrong-zh">${escapeHtml(w.zh)}</span></div>
+          `).join("")}
+        </div>
+      </div>`
+    : "";
+
   card.innerHTML = `
     <div class="result-layout">
       <div class="gameover">
@@ -4134,6 +4177,7 @@ async function endGame(){
         <div class="row"><span>总轮数</span><span>${round}</span></div>
         <div class="row"><span>答对次数</span><span>${correctCount}</span></div>
         <div class="row"><span>正确率</span><span>${round ? Math.round(correctCount/round*100) : 0}%</span></div>
+        ${wrongWordsHtml}
         ${leaderboardHtml}
         <button class="restart-btn" id="restartBtn">再来一局</button>
         <button class="switch-user-btn" id="switchUserBtn">切换账号</button>
@@ -4150,6 +4194,7 @@ function resetGame(){
   round = 0;
   correctCount = 0;
   earnedCount = 0;
+  wrongWords = [];
   resetWordPools();
   updateTopStats();
   startRound();
