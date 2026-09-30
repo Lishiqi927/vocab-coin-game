@@ -414,6 +414,11 @@
     font-size:14px;
     margin-bottom:6px;
     background:#fdeaea;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .wrong-row:hover{
+    background:#fbd8d8;
   }
   .wrong-en{
     font-weight:700;
@@ -3787,6 +3792,14 @@ function escapeHtml(str){
   }[ch]));
 }
 
+function speakEnglish(text){
+  if(!("speechSynthesis" in window) || !text) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "en-US";
+  window.speechSynthesis.speak(utter);
+}
+
 async function sha256Hex(text){
   const enc = new TextEncoder().encode(text);
   const buf = await crypto.subtle.digest("SHA-256", enc);
@@ -4202,8 +4215,8 @@ async function endGame(){
         <div class="lb-title">📖 本局背错的单词</div>
         <div class="wrong-list">
           ${wrongWords.map(w => `
-            <div class="wrong-row">
-              <span class="wrong-en">${escapeHtml(w.en)} <span class="wrong-phonetic">${escapeHtml(w.phonetic)}</span></span>
+            <div class="wrong-row" data-en="${escapeHtml(w.en)}" title="点击播放读音">
+              <span class="wrong-en">🔊 ${escapeHtml(w.en)} <span class="wrong-phonetic">${escapeHtml(w.phonetic)}</span></span>
               <span class="wrong-zh">${escapeHtml(w.zh)}</span>
             </div>
           `).join("")}
@@ -4229,6 +4242,9 @@ async function endGame(){
   `;
   document.getElementById("restartBtn").addEventListener("click", resetGame);
   document.getElementById("switchUserBtn").addEventListener("click", handleLogout);
+  document.querySelectorAll(".wrong-row").forEach(row=>{
+    row.addEventListener("click", ()=> speakEnglish(row.dataset.en));
+  });
 }
 
 function resetGame(){
