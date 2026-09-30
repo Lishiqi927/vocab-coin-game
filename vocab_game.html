@@ -387,6 +387,49 @@
   .wordbank-zh{
     color:var(--muted);
   }
+  .phonics-section-title{
+    font-weight:800;
+    color:var(--text);
+    font-size:14px;
+    margin:14px 0 8px;
+  }
+  .phonics-section-title:first-child{
+    margin-top:0;
+  }
+  .phonics-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:14px;
+    margin-bottom:6px;
+    background:#f7f8fd;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .phonics-row:hover{
+    background:#eef0fb;
+  }
+  .phonics-symbol{
+    min-width:64px;
+    font-size:18px;
+    font-weight:800;
+    color:var(--primary);
+  }
+  .phonics-example{
+    flex:1;
+    font-weight:700;
+    color:var(--text);
+  }
+  .phonics-example-phonetic{
+    font-weight:400;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .phonics-zh{
+    color:var(--muted);
+  }
   .topbar-right{
     display:flex;
     align-items:center;
@@ -739,6 +782,59 @@ const LEVELS = {
   middle:  { label:"初中", cls:"lv-middle",  reward:3 },
   high:    { label:"高中", cls:"lv-high",    reward:5 },
   cet4:    { label:"四级", cls:"lv-cet4",    reward:10 },
+};
+
+const PHONICS_CHART = {
+  "元音": [
+    { symbol:"/iː/",  word:"see",    phonetic:"/siː/",     zh:"看见" },
+    { symbol:"/ɪ/",   word:"sit",    phonetic:"/sɪt/",     zh:"坐" },
+    { symbol:"/ɛ/",   word:"bed",    phonetic:"/bɛd/",     zh:"床" },
+    { symbol:"/æ/",   word:"cat",    phonetic:"/kæt/",     zh:"猫" },
+    { symbol:"/ɑː/",  word:"hot",    phonetic:"/hɑːt/",    zh:"热的" },
+    { symbol:"/ɔː/",  word:"law",    phonetic:"/lɔː/",     zh:"法律" },
+    { symbol:"/ʊ/",   word:"book",   phonetic:"/bʊk/",     zh:"书" },
+    { symbol:"/uː/",  word:"food",   phonetic:"/fuːd/",    zh:"食物" },
+    { symbol:"/ʌ/",   word:"cup",    phonetic:"/kʌp/",     zh:"杯子" },
+    { symbol:"/ə/",   word:"about",  phonetic:"/əˈbaʊt/",  zh:"关于" },
+    { symbol:"/ɜːr/", word:"bird",   phonetic:"/bɜːrd/",   zh:"鸟" },
+    { symbol:"/ər/",  word:"sister", phonetic:"/ˈsɪstər/", zh:"姐妹" },
+    { symbol:"/ɑːr/", word:"car",    phonetic:"/kɑːr/",    zh:"汽车" },
+    { symbol:"/ɔːr/", word:"door",   phonetic:"/dɔːr/",    zh:"门" },
+    { symbol:"/ɪr/",  word:"hear",   phonetic:"/hɪr/",     zh:"听见" },
+    { symbol:"/ɛr/",  word:"care",   phonetic:"/kɛr/",     zh:"关心" },
+    { symbol:"/ʊr/",  word:"sure",   phonetic:"/ʃʊr/",     zh:"确信的" },
+    { symbol:"/eɪ/",  word:"day",    phonetic:"/deɪ/",     zh:"天" },
+    { symbol:"/aɪ/",  word:"my",     phonetic:"/maɪ/",     zh:"我的" },
+    { symbol:"/ɔɪ/",  word:"boy",    phonetic:"/bɔɪ/",     zh:"男孩" },
+    { symbol:"/aʊ/",  word:"how",    phonetic:"/haʊ/",     zh:"怎样" },
+    { symbol:"/oʊ/",  word:"go",     phonetic:"/ɡoʊ/",     zh:"去" },
+  ],
+  "辅音": [
+    { symbol:"/p/",  word:"pen",    phonetic:"/pɛn/",     zh:"钢笔" },
+    { symbol:"/b/",  word:"bag",    phonetic:"/bæɡ/",     zh:"包" },
+    { symbol:"/t/",  word:"tea",    phonetic:"/tiː/",     zh:"茶" },
+    { symbol:"/d/",  word:"dog",    phonetic:"/dɔːɡ/",    zh:"狗" },
+    { symbol:"/k/",  word:"key",    phonetic:"/kiː/",     zh:"钥匙" },
+    { symbol:"/ɡ/",  word:"girl",   phonetic:"/ɡɜːrl/",   zh:"女孩" },
+    { symbol:"/f/",  word:"fish",   phonetic:"/fɪʃ/",     zh:"鱼" },
+    { symbol:"/v/",  word:"van",    phonetic:"/væn/",     zh:"货车" },
+    { symbol:"/θ/",  word:"think",  phonetic:"/θɪŋk/",    zh:"认为" },
+    { symbol:"/ð/",  word:"this",   phonetic:"/ðɪs/",     zh:"这个" },
+    { symbol:"/s/",  word:"sun",    phonetic:"/sʌn/",     zh:"太阳" },
+    { symbol:"/z/",  word:"zoo",    phonetic:"/zuː/",     zh:"动物园" },
+    { symbol:"/ʃ/",  word:"shoe",   phonetic:"/ʃuː/",     zh:"鞋子" },
+    { symbol:"/ʒ/",  word:"vision", phonetic:"/ˈvɪʒən/",  zh:"视力" },
+    { symbol:"/h/",  word:"hand",   phonetic:"/hænd/",    zh:"手" },
+    { symbol:"/tʃ/", word:"chair",  phonetic:"/tʃɛr/",    zh:"椅子" },
+    { symbol:"/dʒ/", word:"jump",   phonetic:"/dʒʌmp/",   zh:"跳" },
+    { symbol:"/m/",  word:"man",    phonetic:"/mæn/",     zh:"男人" },
+    { symbol:"/n/",  word:"no",     phonetic:"/noʊ/",     zh:"不" },
+    { symbol:"/ŋ/",  word:"sing",   phonetic:"/sɪŋ/",     zh:"唱歌" },
+    { symbol:"/l/",  word:"leg",    phonetic:"/lɛɡ/",     zh:"腿" },
+    { symbol:"/r/",  word:"red",    phonetic:"/rɛd/",     zh:"红色" },
+    { symbol:"/j/",  word:"yes",    phonetic:"/jɛs/",     zh:"是的" },
+    { symbol:"/w/",  word:"we",     phonetic:"/wiː/",     zh:"我们" },
+  ],
 };
 
 const RAW_PRIMARY = `
@@ -4015,10 +4111,41 @@ function renderMenu(){
       <div class="menu-title">选择模式</div>
       <button class="menu-btn menu-btn-primary" id="startGameBtn">🎮 开始背单词</button>
       <button class="menu-btn" id="openWordBankBtn">📖 题库</button>
+      <button class="menu-btn" id="openPhonicsBtn">🔤 音标学习</button>
     </div>
   `;
   document.getElementById("startGameBtn").addEventListener("click", resetGame);
   document.getElementById("openWordBankBtn").addEventListener("click", renderWordBankLevels);
+  document.getElementById("openPhonicsBtn").addEventListener("click", renderPhonicsChart);
+}
+
+function renderPhonicsChart(){
+  stage = "phonics";
+  clearTimer();
+  card.innerHTML = `
+    <div class="wordbank-view">
+      <div class="wordbank-header">
+        <button class="back-btn" id="backToMenuFromPhonicsBtn">← 返回</button>
+        <div class="wordbank-title">🔤 音标学习（点击发音）</div>
+      </div>
+      <div class="wordbank-list">
+        ${Object.keys(PHONICS_CHART).map(section => `
+          <div class="phonics-section-title">${section}</div>
+          ${PHONICS_CHART[section].map(p => `
+            <div class="phonics-row" data-en="${escapeHtml(p.word)}" title="点击播放读音">
+              <span class="phonics-symbol">${escapeHtml(p.symbol)}</span>
+              <span class="phonics-example">🔊 ${escapeHtml(p.word)} <span class="phonics-example-phonetic">${escapeHtml(p.phonetic)}</span></span>
+              <span class="phonics-zh">${escapeHtml(p.zh)}</span>
+            </div>
+          `).join("")}
+        `).join("")}
+      </div>
+    </div>
+  `;
+  document.getElementById("backToMenuFromPhonicsBtn").addEventListener("click", renderMenu);
+  document.querySelectorAll(".phonics-row").forEach(row=>{
+    row.addEventListener("click", ()=> speakEnglish(row.dataset.en));
+  });
 }
 
 function renderWordBankLevels(){
