@@ -15,20 +15,21 @@ function parseLevel(name) {
     const line = rawLine.trim();
     if (!line) continue;
     const parts = line.split("|");
-    if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) {
+    if (parts.length !== 3 || !parts[0].trim() || !parts[1].trim() || !parts[2].trim()) {
       malformed++;
       console.error(`[${name}] malformed line: "${line}"`);
       continue;
     }
     const en = parts[0].trim();
-    const zh = parts[1].trim();
+    const phonetic = parts[1].trim();
+    const zh = parts[2].trim();
     const key = en.toLowerCase();
     if (seen.has(key)) {
       duplicates++;
       continue;
     }
     seen.add(key);
-    entries.push([en, zh]);
+    entries.push([en, phonetic, zh]);
   }
   return { entries, malformed, duplicates };
 }
@@ -60,7 +61,7 @@ for (const lvl of LEVELS) {
 console.log(`cross-level duplicate words (appear in >1 level): ${crossLevelCount}`);
 
 function toTemplateLiteral(entries) {
-  return entries.map(([en, zh]) => `${en}|${zh}`).join("\n");
+  return entries.map(([en, phonetic, zh]) => `${en}|${phonetic}|${zh}`).join("\n");
 }
 
 const jsBlock = `const RAW_PRIMARY = \`
