@@ -114,7 +114,7 @@
     transform:translateY(-3px);
     box-shadow:0 8px 18px rgba(79,109,245,.25);
   }
-  .word-btn .level-tag{
+  .level-tag{
     font-size:12px;
     font-weight:700;
     padding:2px 10px;
@@ -267,6 +267,125 @@
     text-align:center;
     margin-top:14px;
     line-height:1.7;
+  }
+  .menu-view{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+  }
+  .menu-title{
+    font-size:18px;
+    font-weight:700;
+    color:var(--text);
+    margin-bottom:8px;
+  }
+  .menu-btn{
+    width:220px;
+    padding:16px 0;
+    border-radius:14px;
+    border:2px solid #e5e8f5;
+    background:#f7f8fd;
+    color:var(--text);
+    font-size:17px;
+    font-weight:700;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .menu-btn:hover{
+    border-color:var(--primary);
+    transform:translateY(-2px);
+  }
+  .menu-btn-primary{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+  .wordbank-view{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+  }
+  .wordbank-header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:16px;
+  }
+  .back-btn{
+    background:none;
+    border:none;
+    color:var(--primary);
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    padding:4px 8px;
+  }
+  .wordbank-title{
+    font-size:16px;
+    font-weight:700;
+    color:var(--text);
+  }
+  .wordbank-levels{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    flex:1;
+  }
+  .wordbank-level-btn{
+    border:2px solid #e5e8f5;
+    background:#f7f8fd;
+    border-radius:14px;
+    padding:24px 12px;
+    cursor:pointer;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    align-items:center;
+    justify-content:center;
+    transition:all .15s ease;
+  }
+  .wordbank-level-btn:hover{
+    border-color:var(--primary);
+    transform:translateY(-3px);
+  }
+  .wordbank-count{
+    font-size:13px;
+    color:var(--muted);
+  }
+  .wordbank-list{
+    max-height:420px;
+    overflow-y:auto;
+  }
+  .wordbank-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:14px;
+    margin-bottom:6px;
+    background:#f7f8fd;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .wordbank-row:hover{
+    background:#eef0fb;
+  }
+  .wordbank-en{
+    font-weight:700;
+    color:var(--text);
+  }
+  .wordbank-phonetic{
+    font-weight:400;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .wordbank-zh{
+    color:var(--muted);
   }
   .topbar-right{
     display:flex;
@@ -3884,7 +4003,74 @@ function enterGame(username){
   authOverlayEl.style.display = "none";
   userBadgeEl.style.display = "flex";
   usernameLabelEl.textContent = username;
-  resetGame();
+  resetStats();
+  renderMenu();
+}
+
+function renderMenu(){
+  stage = "menu";
+  clearTimer();
+  card.innerHTML = `
+    <div class="menu-view">
+      <div class="menu-title">选择模式</div>
+      <button class="menu-btn menu-btn-primary" id="startGameBtn">🎮 开始背单词</button>
+      <button class="menu-btn" id="openWordBankBtn">📖 题库</button>
+    </div>
+  `;
+  document.getElementById("startGameBtn").addEventListener("click", resetGame);
+  document.getElementById("openWordBankBtn").addEventListener("click", renderWordBankLevels);
+}
+
+function renderWordBankLevels(){
+  stage = "wordbank";
+  clearTimer();
+  card.innerHTML = `
+    <div class="wordbank-view">
+      <div class="wordbank-header">
+        <button class="back-btn" id="backToMenuBtn">← 返回</button>
+        <div class="wordbank-title">📖 题库 · 选择分类</div>
+      </div>
+      <div class="wordbank-levels">
+        ${Object.keys(LEVELS).map(lv => {
+          const info = LEVELS[lv];
+          return `<div class="wordbank-level-btn" data-lv="${lv}">
+            <span class="level-tag ${info.cls}">${info.label}</span>
+            <span class="wordbank-count">${WORD_BANK[lv].length} 词</span>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>
+  `;
+  document.getElementById("backToMenuBtn").addEventListener("click", renderMenu);
+  document.querySelectorAll(".wordbank-level-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=> renderWordBankList(btn.dataset.lv));
+  });
+}
+
+function renderWordBankList(lv){
+  stage = "wordbank";
+  const info = LEVELS[lv];
+  const words = WORD_BANK[lv];
+  card.innerHTML = `
+    <div class="wordbank-view">
+      <div class="wordbank-header">
+        <button class="back-btn" id="backToLevelsBtn">← 返回</button>
+        <div class="wordbank-title">${info.label} · 共 ${words.length} 词</div>
+      </div>
+      <div class="wordbank-list">
+        ${words.map(([en, phonetic, zh]) => `
+          <div class="wordbank-row" data-en="${escapeHtml(en)}" title="点击播放读音">
+            <span class="wordbank-en">🔊 ${escapeHtml(en)} <span class="wordbank-phonetic">${escapeHtml(phonetic)}</span></span>
+            <span class="wordbank-zh">${escapeHtml(zh)}</span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+  document.getElementById("backToLevelsBtn").addEventListener("click", renderWordBankLevels);
+  document.querySelectorAll(".wordbank-row").forEach(row=>{
+    row.addEventListener("click", ()=> speakEnglish(row.dataset.en));
+  });
 }
 
 async function handleAuthSubmit(){
@@ -4235,19 +4421,21 @@ async function endGame(){
         ${wrongWordsHtml}
         ${leaderboardHtml}
         <button class="restart-btn" id="restartBtn">再来一局</button>
+        <button class="switch-user-btn" id="backToMenuFromOverBtn">返回菜单</button>
         <button class="switch-user-btn" id="switchUserBtn">切换账号</button>
       </div>
       ${globalBoardHtml}
     </div>
   `;
   document.getElementById("restartBtn").addEventListener("click", resetGame);
+  document.getElementById("backToMenuFromOverBtn").addEventListener("click", renderMenu);
   document.getElementById("switchUserBtn").addEventListener("click", handleLogout);
   document.querySelectorAll(".wrong-row").forEach(row=>{
     row.addEventListener("click", ()=> speakEnglish(row.dataset.en));
   });
 }
 
-function resetGame(){
+function resetStats(){
   gold = START_GOLD;
   round = 0;
   correctCount = 0;
@@ -4255,6 +4443,10 @@ function resetGame(){
   wrongWords = [];
   resetWordPools();
   updateTopStats();
+}
+
+function resetGame(){
+  resetStats();
   startRound();
 }
 
